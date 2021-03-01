@@ -4597,30 +4597,6 @@ bool AArch64FastISel::selectIntExt(const Instruction *I) {
 
   // Try to optimize already sign-/zero-extended values from function arguments.
   bool IsZExt = isa<ZExtInst>(I);
-  if (const auto *Arg = dyn_cast<Argument>(I->getOperand(0))) {
-    if ((IsZExt && Arg->hasZExtAttr()) || (!IsZExt && Arg->hasSExtAttr())) {
-      if (RetVT == MVT::i64 && SrcVT != MVT::i64) {
-        unsigned ResultReg = createResultReg(&AArch64::GPR64RegClass);
-        BuildMI(*FuncInfo.MBB, FuncInfo.InsertPt, DbgLoc,
-                TII.get(AArch64::SUBREG_TO_REG), ResultReg)
-            .addImm(0)
-            .addReg(SrcReg, getKillRegState(SrcIsKill))
-            .addImm(AArch64::sub_32);
-        SrcReg = ResultReg;
-      }
-      // Conservatively clear all kill flags from all uses, because we are
-      // replacing a sign-/zero-extend instruction at IR level with a nop at MI
-      // level. The result of the instruction at IR level might have been
-      // trivially dead, which is now not longer true.
-      unsigned UseReg = lookUpRegForValue(I);
-      if (UseReg)
-        MRI.clearKillFlags(UseReg);
-
-      updateValueMap(I, SrcReg);
-      return true;
-    }
-  }
-
   unsigned ResultReg = emitIntExt(SrcVT, SrcReg, RetVT, IsZExt);
   if (!ResultReg)
     return false;
