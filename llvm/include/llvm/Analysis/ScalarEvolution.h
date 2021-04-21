@@ -120,6 +120,19 @@ public:
     NoWrapMask = (1 << 3) - 1
   };
 
+  /// HasNonIntegralPointerFlag are bitfield indices into SubclassData.
+  ///
+  /// When constructing SCEV expressions for LLVM expressions with non-integral
+  /// pointer types, some additional processing is required to ensure that we
+  /// don't introduce any illegal transformations. However, non-integral pointer
+  /// types are a very rarely used feature, so we want to make sure to only do
+  /// such processing if they are actually used. To ensure minimal performance
+  /// impact, we memoize that fact in using these flags.
+  enum HasNonIntegralPointerFlag {
+    FlagNoNIPointers = 0,
+    FlagHasNIPointers = (1 << 3)
+  };
+
   explicit SCEV(const FoldingSetNodeIDRef ID, SCEVTypes SCEVTy,
                 unsigned short ExpressionSize)
       : FastID(ID), SCEVType(SCEVTy), ExpressionSize(ExpressionSize) {}
@@ -154,6 +167,10 @@ public:
   // compilation time.
   unsigned short getExpressionSize() const {
     return ExpressionSize;
+  }
+
+  bool hasNonIntegralPointers() const {
+    return SubclassData & FlagHasNIPointers;
   }
 
   /// Print out the internal representation of this scalar to the specified
@@ -745,7 +762,7 @@ public:
                                         const BasicBlock *ExitingBlock);
 
   /// The terms "backedge taken count" and "exit count" are used
-  /// interchangeably to refer to the number of times the backedge of a loop 
+  /// interchangeably to refer to the number of times the backedge of a loop
   /// has executed before the loop is exited.
   enum ExitCountKind {
     /// An expression exactly describing the number of times the backedge has
@@ -758,7 +775,7 @@ public:
   };
 
   /// Return the number of times the backedge executes before the given exit
-  /// would be taken; if not exactly computable, return SCEVCouldNotCompute. 
+  /// would be taken; if not exactly computable, return SCEVCouldNotCompute.
   /// For a single exit loop, this value is equivelent to the result of
   /// getBackedgeTakenCount.  The loop is guaranteed to exit (via *some* exit)
   /// before the backedge is executed (ExitCount + 1) times.  Note that there
