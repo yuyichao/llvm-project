@@ -33,6 +33,8 @@ public:
 
   unsigned getStubAlignment() override { return 4; }
 
+  bool doDwarfFDESymbolsUseAbsDiff() override { return false; }
+
   Expected<JITSymbolFlags> getJITSymbolFlags(const SymbolRef &SR) override {
     auto Flags = RuntimeDyldImpl::getJITSymbolFlags(SR);
     if (!Flags)

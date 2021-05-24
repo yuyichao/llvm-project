@@ -272,9 +272,9 @@ RuntimeDyldMachOCRTPBase<Impl>::finalizeLoad(const ObjectFile &Obj,
 }
 
 template <typename Impl>
-unsigned char *RuntimeDyldMachOCRTPBase<Impl>::processFDE(uint8_t *P,
-                                                          int64_t DeltaForText,
-                                                          int64_t DeltaForEH) {
+unsigned char *RuntimeDyldMachOCRTPBase<Impl>::patchFDERelocations(uint8_t *P,
+                                                                   int64_t DeltaForText,
+                                                                   int64_t DeltaForEH) {
   typedef typename Impl::TargetPtrT TargetPtrT;
 
   LLVM_DEBUG(dbgs() << "Processing FDE: Delta for text: " << DeltaForText
@@ -324,19 +324,24 @@ void RuntimeDyldMachOCRTPBase<Impl>::registerEHFrames() {
       continue;
     SectionEntry *Text = &Sections[SectionInfo.TextSID];
     SectionEntry *EHFrame = &Sections[SectionInfo.EHFrameSID];
-    SectionEntry *ExceptTab = nullptr;
-    if (SectionInfo.ExceptTabSID != RTDYLD_INVALID_SECTION_ID)
-      ExceptTab = &Sections[SectionInfo.ExceptTabSID];
 
-    int64_t DeltaForText = computeDelta(Text, EHFrame);
-    int64_t DeltaForEH = 0;
-    if (ExceptTab)
-      DeltaForEH = computeDelta(ExceptTab, EHFrame);
+    // If the FDE includes absolute symbol relocations (not supported
+    // by RuntimeDyld), we need to manually patch-up the values
+    if (doDwarfFDESymbolsUseAbsDiff()) {
+      SectionEntry *ExceptTab = nullptr;
+      if (SectionInfo.ExceptTabSID != RTDYLD_INVALID_SECTION_ID)
+        ExceptTab = &Sections[SectionInfo.ExceptTabSID];
 
-    uint8_t *P = EHFrame->getAddress();
-    uint8_t *End = P + EHFrame->getSize();
-    while (P != End) {
-      P = processFDE(P, DeltaForText, DeltaForEH);
+      int64_t DeltaForText = computeDelta(Text, EHFrame);
+      int64_t DeltaForEH = 0;
+      if (ExceptTab)
+        DeltaForEH = computeDelta(ExceptTab, EHFrame);
+
+      uint8_t *P = EHFrame->getAddress();
+      uint8_t *End = P + EHFrame->getSize();
+      while (P != End) {
+        P = patchFDERelocations(P, DeltaForText, DeltaForEH);
+      }
     }
 
     MemMgr.registerEHFrames(EHFrame->getAddress(), EHFrame->getLoadAddress(),

@@ -30,6 +30,8 @@ public:
 
   unsigned getStubAlignment() override { return 8; }
 
+  bool doDwarfFDESymbolsUseAbsDiff() override { return false; }
+  
   /// Extract the addend encoded in the instruction / memory location.
   Expected<int64_t> decodeAddend(const RelocationEntry &RE) const {
     const SectionEntry &Section = Sections[RE.SectionID];

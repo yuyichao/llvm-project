@@ -43,6 +43,10 @@ protected:
     SID ExceptTabSID;
   };
 
+  // Returns true if the FDE section includes absolute symbol relocations
+  // on this platform.
+  virtual bool doDwarfFDESymbolsUseAbsDiff() = 0;
+
   // When a module is loaded we save the SectionID of the EH frame section
   // in a table until we receive a request to register all unregistered
   // EH frame sections with the memory manager.
@@ -147,8 +151,8 @@ private:
   Impl &impl() { return static_cast<Impl &>(*this); }
   const Impl &impl() const { return static_cast<const Impl &>(*this); }
 
-  unsigned char *processFDE(uint8_t *P, int64_t DeltaForText,
-                            int64_t DeltaForEH);
+  unsigned char *patchFDERelocations(uint8_t *P, int64_t DeltaForText,
+                                     int64_t DeltaForEH);
 
 public:
   RuntimeDyldMachOCRTPBase(RuntimeDyld::MemoryManager &MemMgr,

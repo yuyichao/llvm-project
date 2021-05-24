@@ -30,6 +30,8 @@ public:
 
   unsigned getStubAlignment() override { return 8; }
 
+  bool doDwarfFDESymbolsUseAbsDiff() override { return true; }
+
   Expected<relocation_iterator>
   processRelocationRef(unsigned SectionID, relocation_iterator RelI,
                        const ObjectFile &BaseObjT,
