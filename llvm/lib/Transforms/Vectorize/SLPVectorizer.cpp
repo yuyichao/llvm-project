@@ -1707,6 +1707,18 @@ private:
       return true;
     }
 
+    /// When ReuseShuffleIndices is empty it just returns position of \p V
+    /// within vector of Scalars. Otherwise, try to remap on its reuse index.
+    int findLaneForValue(Value *V) const {
+      unsigned FoundLane = std::distance(Scalars.begin(), find(Scalars, V));
+      assert(FoundLane < Scalars.size() && "Couldn't find extract lane");
+      if (!ReuseShuffleIndices.empty()) {
+        FoundLane = std::distance(ReuseShuffleIndices.begin(),
+                                  find(ReuseShuffleIndices, FoundLane));
+      }
+      return FoundLane;
+    }
+
 #ifndef NDEBUG
     /// Debug printer.
     LLVM_DUMP_METHOD void dump() const {
@@ -4268,13 +4280,7 @@ Value *BoUpSLP::gather(ArrayRef<Value *> VL) {
     // Add to our 'need-to-extract' list.
     if (TreeEntry *Entry = getTreeEntry(Val)) {
       // Find which lane we need to extract.
-      unsigned FoundLane = std::distance(Entry->Scalars.begin(),
-                                         find(Entry->Scalars, Val));
-      assert(FoundLane < Entry->Scalars.size() && "Couldn't find extract lane");
-      if (!Entry->ReuseShuffleIndices.empty()) {
-        FoundLane = std::distance(Entry->ReuseShuffleIndices.begin(),
-                                  find(Entry->ReuseShuffleIndices, FoundLane));
-      }
+      unsigned FoundLane = Entry->findLaneForValue(Val);
       ExternalUses.push_back(ExternalUser(Val, InsElt, FoundLane));
     }
   }
@@ -4602,8 +4608,11 @@ Value *BoUpSLP::vectorizeTree(TreeEntry *E) {
         // The pointer operand uses an in-tree scalar so we add the new BitCast
         // to ExternalUses list to make sure that an extract will be generated
         // in the future.
-        if (getTreeEntry(PO))
-          ExternalUses.emplace_back(PO, cast<User>(VecPtr), 0);
+        if (TreeEntry *Entry = getTreeEntry(PO)) {
+          // Find which lane we need to extract.
+          unsigned FoundLane = Entry->findLaneForValue(PO);
+          ExternalUses.emplace_back(PO, cast<User>(VecPtr), FoundLane);
+        }
 
         NewLI = Builder.CreateAlignedLoad(VecTy, VecPtr, LI->getAlign());
       } else {
@@ -4654,8 +4663,12 @@ Value *BoUpSLP::vectorizeTree(TreeEntry *E) {
       // The pointer operand uses an in-tree scalar, so add the new BitCast to
       // ExternalUses to make sure that an extract will be generated in the
       // future.
-      if (getTreeEntry(ScalarPtr))
-        ExternalUses.push_back(ExternalUser(ScalarPtr, cast<User>(VecPtr), 0));
+      if (TreeEntry *Entry = getTreeEntry(ScalarPtr)) {
+        // Find which lane we need to extract.
+        unsigned FoundLane = Entry->findLaneForValue(ScalarPtr);
+        ExternalUses.push_back(
+            ExternalUser(ScalarPtr, cast<User>(VecPtr), FoundLane));
+      }
 
       Value *V = propagateMetadata(ST, E->Scalars);
       if (NeedToShuffleReuses)
@@ -4756,8 +4769,14 @@ Value *BoUpSLP::vectorizeTree(TreeEntry *E) {
       // The scalar argument uses an in-tree scalar so we add the new vectorized
       // call to ExternalUses list to make sure that an extract will be
       // generated in the future.
-      if (ScalarArg && getTreeEntry(ScalarArg))
-        ExternalUses.push_back(ExternalUser(ScalarArg, cast<User>(V), 0));
+      if (ScalarArg) {
+        if (TreeEntry *Entry = getTreeEntry(ScalarArg)) {
+          // Find which lane we need to extract.
+          unsigned FoundLane = Entry->findLaneForValue(ScalarArg);
+          ExternalUses.push_back(
+              ExternalUser(ScalarArg, cast<User>(V), FoundLane));
+        }
+      }
 
       propagateIRFlags(V, E->Scalars, VL0);
       if (NeedToShuffleReuses)
