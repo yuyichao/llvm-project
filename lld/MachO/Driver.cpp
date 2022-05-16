@@ -1522,7 +1522,7 @@ bool macho::link(ArrayRef<const char *> argsArr, llvm::raw_ostream &stdoutOS,
                 // The former can be exported but the latter cannot.
                 defined->privateExtern = false;
               } else {
-                warn("cannot export hidden symbol " + symbolName +
+                warn("cannot export hidden symbol " + toString(*defined) +
                      "\n>>> defined in " + toString(defined->getFile()));
               }
             }
