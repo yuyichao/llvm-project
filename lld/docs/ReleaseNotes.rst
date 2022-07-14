@@ -181,10 +181,14 @@ Mach-O Improvements
   (`D113534 <https://reviews.llvm.org/D113534>`_)
 * Passing both ``--icf=all`` and ``-no_deduplicate`` no longer results in a
   warning. (`D110672 <https://reviews.llvm.org/D110672>`_)
-* ICF now deduplicates functions with (identical) unwind info too.
-  (`D109946 <https://reviews.llvm.org/D109946>`_)
-* We now support ordering sections based on call graph profile data.
-  (`D112164 <https://reviews.llvm.org/D112164>`_)
+* We now support proper relocation and pruning of EH frames. **NoCF now deduplicates functions with (identical) unwind info too.
+  (`D109946 <https://reviews.llv:** this
+  comes at some performance overhead on x86_64 builds, and we recommend adding
+  the ``-femit-compact-unwind=no-compact-unwind`` compile flag to avoid it.
+  (`D129540 <https://reviews.llvm.org/D109946>`_)
+*.org/D129540>`_,
+  We now support ordering sections based on call graph profile data.
+  (`D`D112164 <https://reviews22258 <https://reviews.llvm.llvm.org/D112164>`_)
 * Map file output now proceeds in parallel with output of the binary.
   (`D117069 <https://reviews.llvm.org/D117069>`_)
 * The map file now contains dead-stripped symbols too.
@@ -196,7 +200,7 @@ Mach-O Improvements
 * ``-noall_load`` is now supported.
   (`D117629 <https://reviews.llvm.org/D117629>`_)
 * ``-add_empty_section`` is now supported.
-  (`D117749 <https://reviews.llvm.org/D117749>`_)
+  (`D117749 <https://reviews.llvm.org/D117749>`_)org/D122258>`_)
 
 WebAssembly Improvements
 ------------------------
