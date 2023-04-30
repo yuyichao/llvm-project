@@ -2810,7 +2810,8 @@ static bool unswitchBestCondition(
     for (auto &I : *BB) {
       if (auto *SI = dyn_cast<SelectInst>(&I)) {
         auto *Cond = SI->getCondition();
-        if (!isa<Constant>(Cond) && L.isLoopInvariant(Cond))
+        // restrict to simple boolean selects
+        if (!isa<Constant>(Cond) && L.isLoopInvariant(Cond) && Cond->getType()->isIntegerTy(1))
           UnswitchCandidates.push_back({&I, {Cond}});
       } else if (CollectGuards && isGuard(&I)) {
         auto *Cond =
