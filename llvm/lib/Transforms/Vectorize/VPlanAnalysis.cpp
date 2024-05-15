@@ -160,6 +160,7 @@ Type *VPTypeAnalysis::inferScalarTypeForRecipe(const VPReplicateRecipe *R) {
   case Instruction::ICmp:
   case Instruction::FCmp:
     return IntegerType::get(Ctx, 1);
+  case Instruction::AddrSpaceCast:
   case Instruction::Alloca:
   case Instruction::BitCast:
   case Instruction::Trunc:
