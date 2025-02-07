@@ -2034,6 +2034,8 @@ void CFGBuilder::addImplicitDtorsForDestructor(const CXXDestructorDecl *DD) {
   }
 
   // First destroy member objects.
+  if (RD->isUnion())
+    return;
   for (auto *FI : RD->fields()) {
     // Check for constant size array. Set type to array element type.
     QualType QT = FI->getType();
