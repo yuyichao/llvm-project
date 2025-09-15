@@ -2877,7 +2877,7 @@ bool SimplifyCFGOpt::SpeculativelyExecuteBB(BranchInst *BI, BasicBlock *ThenBB,
   // hoisting above.
   for (auto &I : *ThenBB) {
     if (!SpeculatedStoreValue || &I != SpeculatedStore)
-      I.setDebugLoc(DebugLoc());
+      I.dropLocation();
     I.dropUndefImplyingAttrsAndUnknownMetadata();
   }
 
