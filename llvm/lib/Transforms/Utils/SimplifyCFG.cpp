@@ -3034,7 +3034,7 @@ bool SimplifyCFGOpt::SpeculativelyExecuteBB(BranchInst *BI, BasicBlock *ThenBB,
     if (!SpeculatedStoreValue || &I != SpeculatedStore) {
       // Don't update the DILocation of dbg.assign intrinsics.
       if (!isa<DbgAssignIntrinsic>(&I))
-        I.setDebugLoc(DebugLoc());
+        I.dropLocation();
     }
     I.dropUndefImplyingAttrsAndUnknownMetadata();
 
