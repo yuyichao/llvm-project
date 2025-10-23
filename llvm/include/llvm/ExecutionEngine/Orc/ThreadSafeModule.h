@@ -36,6 +36,8 @@ private:
   };
 
 public:
+  using Lock = std::unique_lock<std::recursive_mutex>;
+
   /// Construct a null context.
   ThreadSafeContext() = default;
 
@@ -45,6 +47,9 @@ public:
     assert(S->Ctx != nullptr &&
            "Can not construct a ThreadSafeContext from a nullptr");
   }
+
+  LLVMContext *getContext() { return S ? S->Ctx.get() : nullptr; }
+  Lock getLock() { return Lock(S->Mutex); };
 
   template <typename Func> decltype(auto) withContextDo(Func &&F) {
     if (auto TmpS = S) {
