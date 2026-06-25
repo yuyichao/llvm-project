@@ -2265,10 +2265,15 @@ struct AANonNullImpl : AANonNull {
       : AANonNull(IRP, A),
         NullIsDefined(NullPointerIsDefined(
             getAnchorScope(),
-            getAssociatedValue().getType()->getPointerAddressSpace())) {}
+            getAssociatedValue().getType()->isPointerTy() ?
+            getAssociatedValue().getType()->getPointerAddressSpace() : 0)) {}
 
   /// See AbstractAttribute::initialize(...).
   void initialize(Attributor &A) override {
+    if (!getAssociatedValue().getType()->isPointerTy()) {
+      indicatePessimisticFixpoint();
+      return;
+    }
     Value &V = *getAssociatedValue().stripPointerCasts();
     if (!NullIsDefined &&
         hasAttr({Attribute::NonNull, Attribute::Dereferenceable},
