@@ -30,10 +30,9 @@ void MCAsmInfoELF::anchor() {}
 MCSection *MCAsmInfoELF::getStackSection(MCContext &Ctx, bool Exec) const {
   // Solaris doesn't know/doesn't care about .note.GNU-stack sections, so
   // don't emit them.
-  if (Ctx.getTargetTriple().isOSSolaris())
+  if (Exec || Ctx.getTargetTriple().isOSSolaris())
     return nullptr;
-  return Ctx.getELFSection(".note.GNU-stack", ELF::SHT_PROGBITS,
-                           Exec ? ELF::SHF_EXECINSTR : 0U);
+  return Ctx.getELFSection(".note.GNU-stack", ELF::SHT_PROGBITS, 0U);
 }
 
 bool MCAsmInfoELF::useCodeAlign(const MCSection &Sec) const {
